@@ -1,9 +1,17 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <vector>
-#include <sstream>
 #include <memory>
+#include <optional>
+//#include <istream>
+/*
+struct Rope{
+    std::vector arr(4096, char);
+    std::optional<Rope*> next = std::nullopt;
+}
+*/
 
 std::vector<std::pair<int, int>> find_numerics(std::string in){
     int start = -1;
@@ -13,8 +21,6 @@ std::vector<std::pair<int, int>> find_numerics(std::string in){
     int curr = first;
     std::vector<std::pair<int, int>> indices;
     indices.reserve(last);
-    
-    int* somenum = new int;
     
     while(curr < last){
         start = -1;
@@ -42,7 +48,7 @@ std::vector<std::string> extract_substrings(std::vector<std::pair<int, int>> ind
     std::vector<std::string> strs;
     strs.reserve(indices.size());
     
-    for(int i = 0; i < indices.size(); i++){
+    for(int i = 0; i < static_cast<int>(indices.size()); i++){
         std::string sub = s.substr(indices[i].first, indices[i].second - indices[i].first);
         strs.push_back(sub);
     }
@@ -51,68 +57,101 @@ std::vector<std::string> extract_substrings(std::vector<std::pair<int, int>> ind
 
 
 
+
+bool is_num(char c){
+    return (48 <= c && c <= 57);
+}
+
+/*
+bool in_range(std::string check, std::string low, std::string hi){
+    
+}
+*/
+
+
+
 int main(int argc, char* argv[]){
-    if(argc < 2) {
-        std::cout << "usage: "<< argv[0] <<" <lowest number> <highest number> <file>" << '\n';
+    if(argc != 4) {
+        std::cout << "usage: "<< argv[0] <<" <lowest number> <highest number> <file>" << std::endl;
         return 0;
     }
     
+    
+    int start_of_line;
+    int dist;
+    int prev;
+    int curr;
+    bool print_this_line;
     std::string low;
     std::string hi;
     std::string file;
-    std::string line;
+    std::ifstream file_stream;
+    constexpr size_t buffersize = 4026 * 32;
     
-    low.assign(argv[1]);
-    hi.assign(argv[2]);
+    
     file.assign(argv[3]);
+    std::cout << "file: " << file << std::endl;
+    file_stream.open(file);
     
-    std::ifstream file_stream(file);
-    
-    if(file_stream.fail()){
-        std::cout << "file could not be opened: " << file << '\n';
+    if(file_stream.fail()) {
+        std::cout << "file could not be opened: " << file << std::endl;
         std::exit(1);
-    } else {
-        std::cout << "file exists!" << '\n';
     }
     
-    std::cout << "low: " << low << '\n';
-    std::cout << "hi: " << hi << '\n';
-    std::cout << "file: " << file << '\n';
-
-    constexpr size_t buffersize = 4026 * 32;
-    std::unique_ptr<char[]> buffer(new char[buffersize]);
+    std::vector<char> text(buffersize);
+    prev = -1;
+    dist = -1;
+    curr = 0;
     
-    while( file_stream ) {
-        file_stream.read(buffer.get(), buffersize);
-        line.assign(buffer.get());
-        std::vector<std::pair<int, int>> inds = find_numerics(line);
-        if(inds.size() > 0){
-            /*
-            std::cout << "contains number(s)!" << '\n';
-            for(int i = 0; i < inds.size(); i++){
-                std::pair<int, int> p = inds[i];
-                std::cout << "(" << p.first << ", " << p.second << ")"  << '\n';
+    file_stream.read(text.data(), buffersize);
+        
+    if( file_stream .fail() && !file_stream.eof() ) {
+        std::cout << "exiting due to file stream error" << std::endl;
+        
+        std::exit(1);
+    }
+    start_of_line = 0;
+    
+    while( file_stream.gcount() > 0 ){
+        std::cout << "inside while" << std::endl;
+        std::streamsize charsread = file_stream.gcount();
+        for(int i = 0; i < static_cast<int>(charsread); i++) {
+            curr = i;
+            if(is_num(text[curr]) ){
+                if(dist == -1 ) {
+                    // we must be at the beginning of the line
+                    dist = curr;
+                }
+                
+            } else if( !is_num(text[curr]) && is_num(text[prev]) ) {
+                // we're at the end of a number
+                // print everything from dist to prev
+                // mark this line as needing to be printed
+                print_this_line = true;
+                //std::vector<char>::const_iterator first = text.begin();
+                //std::vector<char>::const_iterator last = text.begin() + prev;
+                std::string match(text.begin()+ dist, text.begin() + prev);
+                std::cout << "match: " << match << std::endl;
+                prev = curr;
+                dist = -1;
             }
-            */
-            
-            std::vector<std::string> subs = extract_substrings(inds, line);
-            //std::cout << "subs.size(): " << subs.size() << '\n';
-            for(int i = 0; i < subs.size(); i++){
-                std::cout << subs[i] << '\n';
+            if( text[prev] == '\n' ) {
+                // end of the line. Print if we need to...
+                if(print_this_line){
+                    std::string line(&text[start_of_line], &text[curr]);
+                    std::cout << "line: " << line << std::endl;
+                }
+                // then reset the start of the line
+                start_of_line = curr;                
             }
-            subs.clear();
-        } else {
-            std::cout << "does not contain numbers" << '\n';
+            prev = curr;
         }
-        inds.clear();
-        file_stream.clear();
-        std::string().swap(line);
-        std::getline(file_stream, line);
-        //std::cout << "line addr: " << &line << '\n';
+        break;
         
     }
     
     return 0;
+
 }
 
 

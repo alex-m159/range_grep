@@ -1,2 +1,2 @@
 #!/bin/bash
-g++ range.cpp -O3 --std=c++17 -o range
+g++ range.cpp -O3 -pedantic -Wall --std=c++17 -o range
