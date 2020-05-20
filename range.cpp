@@ -65,6 +65,10 @@ bool is_num(char c){
 /*
 bool in_range(std::string check, std::string low, std::string hi){
     
+    for(int i = 0; i < check.length(); i++){
+        
+    }    
+    
 }
 */
 
@@ -117,7 +121,7 @@ int main(int argc, char* argv[]){
         std::streamsize charsread = file_stream.gcount();
         for(int i = 0; i < static_cast<int>(charsread); i++) {
             curr = i;
-            if(is_num(text[curr]) ){
+            if(is_num(text[curr]) && text[curr] != '0'){
                 if(dist == -1 ) {
                     // we must be at the beginning of the line
                     dist = curr;
