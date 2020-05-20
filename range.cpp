@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
                 print_this_line = true;
                 //std::vector<char>::const_iterator first = text.begin();
                 //std::vector<char>::const_iterator last = text.begin() + prev;
-                std::string match(text.begin()+ dist, text.begin() + prev);
+                std::string match(text.begin()+ dist, text.begin() + prev + 1);
                 std::cout << "match: " << match << std::endl;
                 prev = curr;
                 dist = -1;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
                 // then reset the start of the line
             }
             if( text[prev] == '\n' ) {
-                start_of_line == cur
+                start_of_line = curr;
             }
             prev = curr;
         }
