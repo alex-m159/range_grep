@@ -135,14 +135,16 @@ int main(int argc, char* argv[]){
                 prev = curr;
                 dist = -1;
             }
-            if( text[prev] == '\n' ) {
+            if( text[curr] == '\n' ) {
                 // end of the line. Print if we need to...
                 if(print_this_line){
                     std::string line(&text[start_of_line], &text[curr]);
                     std::cout << "line: " << line << std::endl;
                 }
                 // then reset the start of the line
-                start_of_line = curr;                
+            }
+            if( text[prev] == '\n' ) {
+                start_of_line == cur
             }
             prev = curr;
         }
@@ -151,7 +153,6 @@ int main(int argc, char* argv[]){
     }
     
     return 0;
-
 }
 
 
