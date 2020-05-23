@@ -62,15 +62,38 @@ bool is_num(char c){
     return (48 <= c && c <= 57);
 }
 
-/*
+
 bool in_range(std::string check, std::string low, std::string hi){
     
-    for(int i = 0; i < check.length(); i++){
-        
-    }    
+    if(check.length() < low.length() || hi.length() < check.length() )
+        return false;
     
+    // if check is between the length of low and hi, then it must also have 
+    // a value in between as well.
+    if(low.length() < check.length() && check.length() < hi.length() )
+        return true;
+
+    // this will only run if check is equal in length to either low or hi
+    if(low.length() == check.length()){
+        for(int i = check.length()-1; i >- 0; i--){
+            if(low[i] != check[i]) {
+                if( check[i] < low[i]  ) {
+                    return false;
+                }
+            }
+        }
+    } else if(hi.length() == check.length()) {
+        for(int i = check.length()-1; i >- 0; i--){
+            if(hi[i] != check[i]) {
+                if( hi[i] < check[i]  ) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
-*/
+
 
 
 
@@ -86,15 +109,16 @@ int main(int argc, char* argv[]){
     int prev;
     int curr;
     bool print_this_line;
-    std::string low;
+    std::string lo;
     std::string hi;
     std::string file;
     std::ifstream file_stream;
     constexpr size_t buffersize = 4026 * 32;
     
-    
+    lo.assign(argv[1]);
+    hi.assign(argv[2]);
     file.assign(argv[3]);
-    std::cout << "file: " << file << std::endl;
+    //std::cout << "file: " << file << std::endl;
     file_stream.open(file);
     
     if(file_stream.fail()) {
@@ -115,12 +139,12 @@ int main(int argc, char* argv[]){
         std::exit(1);
     }
     start_of_line = 0;
-    
+
     while( file_stream.gcount() > 0 ){
-        std::cout << "inside while" << std::endl;
+        //std::cout << "inside while" << std::endl;
         std::streamsize charsread = file_stream.gcount();
         for(int i = 0; i < static_cast<int>(charsread); i++) {
-            curr = i;
+            curr++;
             if(is_num(text[curr]) && text[curr] != '0'){
                 if(dist == -1 ) {
                     // we must be at the beginning of the line
@@ -131,28 +155,60 @@ int main(int argc, char* argv[]){
                 // we're at the end of a number
                 // print everything from dist to prev
                 // mark this line as needing to be printed
-                print_this_line = true;
-                //std::vector<char>::const_iterator first = text.begin();
-                //std::vector<char>::const_iterator last = text.begin() + prev;
-                std::string match(text.begin()+ dist, text.begin() + prev + 1);
-                std::cout << "match: " << match << std::endl;
+                std::string match(text.begin() + dist, text.begin() + prev + 1);
+                /*                
+                if(dist == -1)
+                    std::cout << "dist: -1" << std::endl;
+                else
+                    std::cout << "dist: " << text[dist] << std::endl;
+                std::cout << "prev: " << text[prev] << std::endl;
+                std::cout << "curr: " << text[curr] << std::endl;
+                */
+                //std::cout << "match: " << match.c_str() << std::endl;
+                //std::cout << "low: " << lo << std::endl;
+                //std::cout << "high: " << hi << std::endl;
+                
+                if( in_range(match, lo, hi) ) {
+                    //std::cout << "match: " << match.c_str() << std::endl;
+                    //std::cout << "in range" << std::endl;
+                    print_this_line = true;
+                }
                 prev = curr;
                 dist = -1;
             }
-            if( text[curr] == '\n' ) {
+            if( text[curr] == '\n' && print_this_line) {
                 // end of the line. Print if we need to...
-                if(print_this_line){
-                    std::string line(&text[start_of_line], &text[curr]);
-                    std::cout << "line: " << line << std::endl;
-                }
-                // then reset the start of the line
+                std::string line(&text[start_of_line], &text[curr]);
+                std::cout << "line: " << line << std::endl;
+                print_this_line = false;
             }
             if( text[prev] == '\n' ) {
                 start_of_line = curr;
+                
             }
             prev = curr;
         }
-        break;
+        file_stream.clear();
+       
+        if(text[curr] != '\n') {
+            // our buffer ends in the middle of a line, so we have to save that 
+            std::vector<char> temp(text.begin() + start_of_line, text.begin() + curr);
+            std::move(temp.begin(), temp.end(), text.data());
+            file_stream.read(text.data() + temp.size(), buffersize - temp.size());
+            curr = curr - start_of_line;
+            if( dist != -1 )
+                dist = dist - start_of_line;
+            prev = curr - 1;
+            start_of_line = 0;
+            print_this_line = false;
+        } else {
+            file_stream.read(text.data(), buffersize);
+            curr = 0;
+            dist = -1;
+            prev = curr - 1;
+            start_of_line = 0;
+            print_this_line = false;
+        }
         
     }
     
