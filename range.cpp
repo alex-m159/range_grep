@@ -12,7 +12,7 @@ struct Rope{
     std::optional<Rope*> next = std::nullopt;
 }
 */
-
+    
 std::vector<std::pair<int, int>> find_numerics(std::string in){
     int start = -1;
     int end = -1;
@@ -75,18 +75,22 @@ bool in_range(std::string check, std::string low, std::string hi){
 
     // this will only run if check is equal in length to either low or hi
     if(low.length() == check.length()){
-        for(int i = check.length()-1; i >- 0; i--){
+        for(int i = 0; i < static_cast<int>(check.length()); i++){
             if(low[i] != check[i]) {
                 if( check[i] < low[i]  ) {
                     return false;
+                } else {
+                    return true;
                 }
             }
         }
     } else if(hi.length() == check.length()) {
-        for(int i = check.length()-1; i >- 0; i--){
+        for(int i = 0; i < static_cast<int>(check.length()); i++){
             if(hi[i] != check[i]) {
                 if( hi[i] < check[i]  ) {
                     return false;
+                } else {
+                    return true;
                 }
             }
         }
@@ -98,6 +102,7 @@ bool in_range(std::string check, std::string low, std::string hi){
 
 
 int main(int argc, char* argv[]){
+
     if(argc != 4) {
         std::cout << "usage: "<< argv[0] <<" <lowest number> <highest number> <file>" << std::endl;
         return 0;
@@ -214,7 +219,6 @@ int main(int argc, char* argv[]){
     
     return 0;
 }
-
 
 
 
