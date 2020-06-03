@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <string.h>
+#include <algorithm>
 //#include <istream>
 /*
 struct Rope{
@@ -64,58 +65,39 @@ bool is_num(char c){
 }
 
 
-bool in_range(char* check, int start, int end, std::string low, std::string hi){
-    
+bool in_range(const char* __restrict__ check, int start, int end, std::string low, std::string hi){
+    // unsigned to avoid compiler warning
     unsigned int len = end - start;
     if( len < low.length() || hi.length() < len )
         return false;
     
-    // if check is between the length of low and hi, then it must also have 
+    // if len is between the length of low and hi, then it must also have 
     // a value in between as well.
     if(low.length() < len && len < hi.length() )
         return true;
 
     // this will only run if check is equal in length to either low or hi
-    if(low.length() == len){
-        int ret = strncmp(low.c_str(), check, len);
-        if(ret < 0)
-            return true;
-        else
-            return false;
-        /*        
-        for(int i = 0; i < static_cast<int>(check.length()); i++){
-            if(low[i] != check[i]) {
-                if( check[i] < low[i]  ) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-        */
-    } else if(hi.length() == len) {
-        int ret = strncmp(check, hi.c_str(), len);
-        if(ret < 0)
-            return true;
-        else
-            return false;
-        /*
-        for(int i = 0; i < static_cast<int>(check.length()); i++){
-            if(hi[i] != check[i]) {
-                if( hi[i] < check[i]  ) {
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        }
-        */
-    }
-    return true;
+    int ret;
+    if(low.length() == len)
+        ret = strncmp(low.c_str(), check, len);
+    else 
+        ret = strncmp(check, hi.c_str(), len);
+
+    if(ret < 0)
+        return true;
+    else
+        return false;
+
     
 }
 
-
+int read_data(std::ifstream* __restrict__ file_stream, size_t buffersize, int start_of_line, int curr, char* __restrict__ curr_buff, char* __restrict__ next_buff) {
+    int saved_len = (curr - start_of_line);
+    strncpy(next_buff, &curr_buff[start_of_line], saved_len);
+    file_stream->read( &next_buff[saved_len], buffersize - saved_len - 1);
+    std::swap(curr_buff, next_buff);
+    return saved_len;
+}
 
 
 int main(int argc, char* argv[]){
@@ -133,7 +115,7 @@ int main(int argc, char* argv[]){
     bool print_this_line = false;
     std::string _lo;
     std::string _hi;
-    
+    //std::ios_base::sync_with_stdio(false);
     std::string file;
     std::ifstream file_stream;
     constexpr size_t buffersize = 4026 * 32;
@@ -149,17 +131,14 @@ int main(int argc, char* argv[]){
         std::exit(1);
     }
     
-    std::vector<char> _text(buffersize);
-    std::vector<char> _temp(buffersize);
-    char* text = &_text[0];
-    char* temp = &_temp[0];
-    //const char* lo = _lo.c_str();
-    //const char* hi = _hi.c_str();
+
+    char curr_buff[buffersize];
+    char next_buff[buffersize];
     prev = -1;
     dist = -1;
     curr = 0;
     
-    file_stream.read(text, buffersize);
+    file_stream.read(curr_buff, buffersize);
         
     if( file_stream.fail() && !file_stream.eof() ) {
         std::cout << "exiting due to file stream error" << std::endl;
@@ -173,31 +152,28 @@ int main(int argc, char* argv[]){
         std::streamsize charsread = file_stream.gcount();
         for(int i = 0; i < static_cast<int>(charsread); i++) {
             curr++;
-            if(is_num(text[curr]) && text[curr] != '0'){
-                if(dist == -1 ) {
-                    // we must be at the beginning of the line
-                    dist = curr;
-                }
-                
-            } else if( !is_num(text[curr]) && is_num(text[prev]) ) {
+            if(is_num(curr_buff[curr]) && curr_buff[curr] != '0' && dist == -1 ){
+                // we must be at the beginning of a number
+                dist = curr;
+            } else if( !is_num(curr_buff[curr]) && is_num(curr_buff[prev]) ) {
                 // we're at the end of a number
                 // print everything from dist to prev
                 // mark this line as needing to be printed
                 
-                if( in_range(text, dist, prev+1, _lo, _hi) ) {
+                if( in_range(curr_buff, dist, prev+1, _lo, _hi) ) {
                     
                     print_this_line = true;
                 }
                 prev = curr;
                 dist = -1;
             }
-            if( text[curr] == '\n' && print_this_line) {
+            if( curr_buff[curr] == '\n' && print_this_line) {
                 // end of the line. Print if we need to...
                 
-                printf("%.*s", (curr - start_of_line)+1, &text[start_of_line]);
+                printf("%.*s", (curr - start_of_line)+1, &curr_buff[start_of_line]);
                 print_this_line = false;
             }
-            if( text[prev] == '\n' ) {
+            if( curr_buff[prev] == '\n' ) {
                 start_of_line = curr;
                 
             }
@@ -205,21 +181,35 @@ int main(int argc, char* argv[]){
         }
         file_stream.clear();
        
-        if(text[curr] != '\n') {
-            // our buffer ends in the middle of a line, so we have to save that
-            int saved_len = (curr - start_of_line);
+        if(curr_buff[curr] != '\n') {
+            // our buffer ends in the middle of a line, so we have to save that in case 
+            // we need to print it out.
+            
+            // we're employihg a "rolling" buffer strategy. We'll copy the carried-over
+            // line data into the "next" buffer then fill the next buffer with new data.
+            // Then we can avoid copying the carried-over line data twice.
+            /*
+                __________________   __________________
+                |_________________|  |_________________| 
 
-            strncpy(temp, &text[start_of_line], saved_len);
-            strncpy(text, temp, saved_len);            
-            file_stream.read( &text[saved_len], buffersize - saved_len - 1);
+                                     __________________   __________________
+                                     |_________________|  |_________________| 
+
+                                                          __________________   __________________
+                                                          |_________________|  |_________________| 
+
+            */
+            //  It's a small optimization, but it made a difference in my testing.
+            int saved_len = read_data(&file_stream, buffersize, start_of_line, curr, curr_buff, next_buff);
 
             curr = saved_len;
             if( dist != -1 )
                 dist = dist - start_of_line;
             prev = curr - 1;
             start_of_line = 0;
+            
         } else {
-            file_stream.read(text, buffersize);
+            file_stream.read(curr_buff, buffersize);
             curr = 0;
             dist = -1;
             prev = curr - 1;
