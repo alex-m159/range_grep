@@ -7,57 +7,10 @@
 #include <optional>
 #include <string.h>
 #include <algorithm>
-//#include <istream>
-/*
-struct Rope{
-    std::vector arr(4096, char);
-    std::optional<Rope*> next = std::nullopt;
-}
-*/
-    
-std::vector<std::pair<int, int>> find_numerics(std::string in){
-    int start = -1;
-    int end = -1;
-    int first = 0;
-    int last = in.length();
-    int curr = first;
-    std::vector<std::pair<int, int>> indices;
-    indices.reserve(last);
-    
-    while(curr < last){
-        start = -1;
-        end = -1;
-        while(curr < last && !(48 <= in[curr] && in[curr] <= 57)){
-            curr++;
-        }
-        // post-condition: curr is pointing to an ASCII numeric char and may be past the end of the string
-        
-        // we reached the end of the string and there's no number, so we just exit the loop
-        if(curr >= last)
-            break;
-        start = curr;
-        while(curr < last && (48 <= in[curr] && in[curr] <= 57) ){
-            curr++;
-        }
-        // post-condition: curr is not pointing to ASCII numeric char and may be past the end of the string
-        end = curr;
-        indices.push_back(std::pair<int, int>(start, end));
-    }
-    return indices;
-}
-
-std::vector<std::string> extract_substrings(std::vector<std::pair<int, int>> indices, std::string s) {
-    std::vector<std::string> strs;
-    strs.reserve(indices.size());
-    
-    for(int i = 0; i < static_cast<int>(indices.size()); i++){
-        std::string sub = s.substr(indices[i].first, indices[i].second - indices[i].first);
-        strs.push_back(sub);
-    }
-    return strs;
-}
-
-
+#include <future>
+#include <queue>
+#include <aio.h>
+#include <csignal>
 
 
 bool is_num(char c){
@@ -78,16 +31,16 @@ bool in_range(const char* __restrict__ check, int start, int end, std::string lo
 
     // this will only run if check is equal in length to either low or hi
     int ret;
-    if(low.length() == len)
-        ret = strncmp(low.c_str(), check, len);
-    else 
-        ret = strncmp(check, hi.c_str(), len);
+    if(low.length() == len) {
+        ret = strncmp(low.c_str(), &check[start], len);
+    } else {
+        ret = strncmp(&check[start], hi.c_str(), len);
+    }
 
     if(ret < 0)
         return true;
     else
         return false;
-
     
 }
 
@@ -99,6 +52,68 @@ int read_data(std::ifstream* __restrict__ file_stream, size_t buffersize, int st
     return saved_len;
 }
 
+void write_plain_data(char* buf, char* pre, int byte_count, std::vector<std::pair<int, int>> matches) {
+    printf("%.*s", byte_count, buf);
+}
+
+// pre for preallocated, since I don't want to allocate lots of memory for every write
+void write_color_data(char* buf, char* pre, int byte_count, std::vector<std::pair<int, int>> matches) {
+    
+    int q_size = static_cast<int>(matches.size());
+    int buf_temp = 0;
+    int pre_temp = 0;
+    // will transfer the chars before the match and the match itself into pre,
+    // then after the loop any remaining chars will be transferred to pre.
+    
+    for(int i = 0; i < q_size; i++) {
+        
+        auto m = matches[i];
+        int fst = m.first;
+        int snd = m.second;
+        int n_before = fst - buf_temp;
+        int n = snd - fst;
+        
+        // copy the segment before the match
+        strncpy(&pre[pre_temp], &buf[buf_temp], n_before);
+        pre_temp += n_before;
+        buf_temp += n_before;
+        
+        // add the color code
+        pre[pre_temp] = '\033';
+        pre[pre_temp+1] = '[';
+        pre[pre_temp+2] = '1';
+        pre[pre_temp+3] = ';';
+        pre[pre_temp+4] = '3';
+        pre[pre_temp+5] = '1';
+        pre[pre_temp+6] = 'm';
+        pre_temp += 7;
+        
+        // copy the match
+        strncpy(&pre[pre_temp], &buf[buf_temp], n);
+        buf_temp += n;
+        pre_temp += n;
+        
+        // end the color
+        pre[pre_temp] = '\033';
+        pre[pre_temp+1] = '[';
+        pre[pre_temp+2] = '0';
+        pre[pre_temp+3] = 'm';
+        pre_temp += 4;
+    }
+    
+    int tail = byte_count - buf_temp;
+    strncpy(&pre[pre_temp], &buf[buf_temp], tail);
+    printf("%.*s", static_cast<int>(byte_count + q_size*11), pre);
+    
+}
+
+
+/*
+Will maybe be callback for Linux aio
+void callback(union sigval sig_val) {
+    printf("inside callback\n");
+}
+*/
 
 int main(int argc, char* argv[]){
 
@@ -115,29 +130,35 @@ int main(int argc, char* argv[]){
     bool print_this_line = false;
     std::string _lo;
     std::string _hi;
-    //std::ios_base::sync_with_stdio(false);
+    
     std::string file;
     std::ifstream file_stream;
     constexpr size_t buffersize = 4026 * 32;
+    std::vector<std::pair<int, int>> matches;
     
     _lo.assign(argv[1]);
     _hi.assign(argv[2]);
     file.assign(argv[3]);
-    //std::cout << "file: " << file << std::endl;
+    
     file_stream.open(file);
     
     if(file_stream.fail()) {
         std::cout << "file could not be opened: " << file << std::endl;
         std::exit(1);
     }
-    
+
+
+    //int stdout_fd = fileno(stdout);
 
     char curr_buff[buffersize];
     char next_buff[buffersize];
+    // Add extra space for the console color code characters
+    char pre[ buffersize + 300 ];
     prev = -1;
     dist = -1;
     curr = 0;
-    
+
+
     file_stream.read(curr_buff, buffersize);
         
     if( file_stream.fail() && !file_stream.eof() ) {
@@ -148,10 +169,9 @@ int main(int argc, char* argv[]){
     start_of_line = 0;
 
     while( file_stream.gcount() > 0 ){
-        //std::cout << "inside while" << std::endl;
         std::streamsize charsread = file_stream.gcount();
         for(int i = 0; i < static_cast<int>(charsread); i++) {
-            curr++;
+            
             if(is_num(curr_buff[curr]) && curr_buff[curr] != '0' && dist == -1 ){
                 // we must be at the beginning of a number
                 dist = curr;
@@ -159,18 +179,48 @@ int main(int argc, char* argv[]){
                 // we're at the end of a number
                 // print everything from dist to prev
                 // mark this line as needing to be printed
-                
                 if( in_range(curr_buff, dist, prev+1, _lo, _hi) ) {
-                    
+
                     print_this_line = true;
+                    matches.push_back( std::pair<int, int>(dist - start_of_line, prev+1 - start_of_line) );
                 }
                 prev = curr;
                 dist = -1;
             }
             if( curr_buff[curr] == '\n' && print_this_line) {
-                // end of the line. Print if we need to...
                 
-                printf("%.*s", (curr - start_of_line)+1, &curr_buff[start_of_line]);
+                
+                int byte_count = (curr - start_of_line)+1;               
+                char* start = &curr_buff[start_of_line];
+                /*
+                char* buf = bp.getEmpty();
+                strncpy(buf, start, byte_count);
+                bp.putFull(buf, byte_count);
+
+
+                union sigval sig_val = {.sival_ptr=NULL};
+                
+                struct sigevent sig_e = {
+                    SIGEV_THREAD,
+                    SIGUSR1, 
+                    sig_val,
+                    callback,
+                    NULL, 
+                    0                    
+                };
+                struct aiocb aio_conf = {
+                    stdout_fd,      // aio_filedes, File Descriptor                    
+                    0,              // aio_offset, File offset
+                    buf,            // aio_buf, Location of buffer
+                    byte_count,     // aio_nbytes, Length of transfer
+                    1,              // aio_reqprio, Request priority
+                    sig_e,          // aio_sigevent, Notification Method
+                    LIO_WRITE       // aio_lio_opcode, Operation to be performed
+                     
+                };
+                */
+                write_color_data(start, pre, byte_count, matches);
+                matches.clear();
                 print_this_line = false;
             }
             if( curr_buff[prev] == '\n' ) {
@@ -178,6 +228,7 @@ int main(int argc, char* argv[]){
                 
             }
             prev = curr;
+            curr++;
         }
         file_stream.clear();
        
