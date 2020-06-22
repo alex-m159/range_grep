@@ -122,7 +122,27 @@ int main(int argc, char* argv[]){
         return 0;
     }
     
-    
+    std::string print_only_match_short = "-o";
+    std::string print_only_match = "--only-matching";
+    bool only_matching = false;
+    std::string print_color = "--color";
+    bool color = false;
+
+    for(int i = 0; i < argc; i++){
+        if(strcmp(argv[i], print_only_match.c_str()) == 0 || strcmp(argv[i], print_only_match_short.c_str()) == 0) {
+            only_matching = true;
+        }
+        if(strcmp(argv[i], print_color.c_str()) == 0) {
+            color = true;
+        }
+    }
+
+    void (*write_line)(char*, char*, int, std::vector<std::pair<int, int>>);
+    if(color)
+        write_line = write_color_data;
+    else
+        write_line = write_plain_data;            
+
     int start_of_line;
     int dist;
     int prev;
@@ -147,7 +167,7 @@ int main(int argc, char* argv[]){
         std::exit(1);
     }
 
-
+    
     //int stdout_fd = fileno(stdout);
 
     char curr_buff[buffersize];
@@ -192,34 +212,8 @@ int main(int argc, char* argv[]){
                 
                 int byte_count = (curr - start_of_line)+1;               
                 char* start = &curr_buff[start_of_line];
-                /*
-                char* buf = bp.getEmpty();
-                strncpy(buf, start, byte_count);
-                bp.putFull(buf, byte_count);
-
-
-                union sigval sig_val = {.sival_ptr=NULL};
                 
-                struct sigevent sig_e = {
-                    SIGEV_THREAD,
-                    SIGUSR1, 
-                    sig_val,
-                    callback,
-                    NULL, 
-                    0                    
-                };
-                struct aiocb aio_conf = {
-                    stdout_fd,      // aio_filedes, File Descriptor                    
-                    0,              // aio_offset, File offset
-                    buf,            // aio_buf, Location of buffer
-                    byte_count,     // aio_nbytes, Length of transfer
-                    1,              // aio_reqprio, Request priority
-                    sig_e,          // aio_sigevent, Notification Method
-                    LIO_WRITE       // aio_lio_opcode, Operation to be performed
-                     
-                };
-                */
-                write_color_data(start, pre, byte_count, matches);
+                write_line(start, pre, byte_count, matches);
                 matches.clear();
                 print_this_line = false;
             }
