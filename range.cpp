@@ -122,6 +122,7 @@ int main(int argc, char* argv[]){
         return 0;
     }
     
+    // -o flag doesn't do anything yet
     std::string print_only_match_short = "-o";
     std::string print_only_match = "--only-matching";
     bool only_matching = false;
@@ -202,6 +203,7 @@ int main(int argc, char* argv[]){
                 if( in_range(curr_buff, dist, prev+1, _lo, _hi) ) {
 
                     print_this_line = true;
+                    // we just want to store sart/end offsets into the line, not the whole buffer
                     matches.push_back( std::pair<int, int>(dist - start_of_line, prev+1 - start_of_line) );
                 }
                 prev = curr;
