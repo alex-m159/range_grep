@@ -1,4 +1,5 @@
 # Range Grep
+![GitHub](https://img.shields.io/github/license/alex-m159/range_grep)
 This is a command-line utility that lets you search within a file for numbers that are within a given range.
 
 ## How To Use
