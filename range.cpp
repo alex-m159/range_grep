@@ -140,7 +140,7 @@ void callback(union sigval sig_val) {
 
 int main(int argc, char* argv[]){
 
-    if(argc != 4) {
+    if(argc < 4) {
         std::cout << "usage: "<< argv[0] <<" <lowest number> <highest number> <file>" << std::endl;
         return 0;
     }
@@ -148,14 +148,16 @@ int main(int argc, char* argv[]){
     // -o flag doesn't do anything yet
     std::string print_only_match_short = "-o";
     std::string print_only_match = "--only-matching";
-    bool only_matching = false;
+    //bool only_matching = false;
     std::string print_color = "--color";
     bool color = false;
 
     for(int i = 0; i < argc; i++){
+        /*
         if(strcmp(argv[i], print_only_match.c_str()) == 0 || strcmp(argv[i], print_only_match_short.c_str()) == 0) {
             only_matching = true;
         }
+        */
         if(strcmp(argv[i], print_color.c_str()) == 0) {
             color = true;
         }
