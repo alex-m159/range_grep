@@ -28,7 +28,9 @@ bool is_num(char c){
     return (48 <= c && c <= 57);
 }
 
-
+/**
+ * Precondition:the value at check[start] is the beginning of an ASCII-encoded number with no leading zeros
+ */
 bool in_range(const char* __restrict__ check, int start, int end, std::string low, std::string hi){
     // unsigned to avoid compiler warning
     int len = end - start + 1;

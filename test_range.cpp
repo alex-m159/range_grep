@@ -68,8 +68,14 @@ bool test_in_range() {
     /* Too high */
     assert(in_range("abcd1000002efgh", 4, 10, low, high) == false);
 
-    /* Single character */
+    /* Tests with single digit */
     assert(in_range("abcd9efgh", 4, 4, low, high) == false);
+
+    assert(in_range("abcd9efgh", 4, 4, "8", high) == true);
+
+    assert(in_range("abcd8efgh", 4, 4, "8", high) == true);
+
+    assert(in_range("abcd7efgh", 4, 4, "8", high) == false);
 
     /* Non-number characters */
     assert(in_range("abcdefghjk", 4, 10, low, high) == false);
