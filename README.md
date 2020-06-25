@@ -14,4 +14,20 @@ Usage: `./range <lowest number> <highest number> <file>`
         
 
 ## How To Build
-Install the GCC C++ compiler and run the `build.sh` script. There should be no output at all if the compilation is successful.
+Install the GCC C++ compiler and run the `build.sh` script. There should be no output at all if the compilation is successful. 
+
+There's no build system or Make file. I intentionally limited myself to only the C and C++ standard library and a simple build script since this is such a small project.
+
+## How To Run Tests
+`./test.sh`
+
+Expected output:
+```bash
+$ ./test.sh 
+Compiling range.cpp
+Compiling test_range.cpp
+Linking
+Running
+```
+
+
