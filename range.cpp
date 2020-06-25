@@ -21,7 +21,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-#include "range.hpp"
+#pragma once    
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <cstring>
+#include <vector>
+#include <memory>
+#include <optional>
+#include <string.h>
+#include <algorithm>
+#include <future>
+#include <queue>
+#include <aio.h>
+#include <csignal>
 #include <iostream>
 
 bool is_num(char c){

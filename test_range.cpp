@@ -23,9 +23,9 @@ SOFTWARE.
 */
 #include <algorithm>
 #include <vector>
-#include "range.hpp"
 #include <assert.h>
 #include <iostream>
+#include "range.cpp"
 
 
 bool test_is_num(){
