@@ -133,12 +133,7 @@ int main(int argc, char* argv[]){
             color = true;
         }
     }
-
-    void (*write_line)(char*, char*, int, std::vector<std::pair<int, int>>);
-    if(color)
-        write_line = write_color_data;
-    else
-        write_line = write_plain_data;            
+    
 
     int start_of_line;
     int dist;
@@ -210,8 +205,10 @@ int main(int argc, char* argv[]){
                 
                 int byte_count = (curr - start_of_line)+1;               
                 char* start = &curr_buff[start_of_line];
-                
-                write_line(start, pre, byte_count, matches);
+                if(color)
+                    write_color_data(start, pre, byte_count, matches);
+                else
+                    write_plain_data(start, pre, byte_count, matches);
                 matches.clear();
                 print_this_line = false;
             }
